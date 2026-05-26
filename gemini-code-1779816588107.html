@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attendance Tracker</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 440px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .status-banner {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-banner.error {
+            display: block;
+            background-color: #fee2e2;
+            color: var(--danger);
+            border: 1px solid #fca5a5;
+        }
+
+        .status-banner.success {
+            display: block;
+            background-color: #dcfce7;
+            color: var(--success);
+            border: 1px solid #86efac;
+        }
+
+        .status-banner.info {
+            display: block;
+            background-color: #eff6ff;
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: var(--text);
+            background-color: #fff;
+            transition: border-color 0.15s ease;
+            -webkit-appearance: none;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Fixed Custom Select Arrow for Mobile */
+        .select-wrapper {
+            position: relative;
+        }
+        .select-wrapper::after {
+            content: "▼";
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .btn-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s ease, transform 0.1s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-in { background-color: var(--success); }
+        .btn-in:hover:not(:disabled) { background-color: #15803d; }
+
+        .btn-out { background-color: var(--danger); }
+        .btn-out:hover:not(:disabled) { background-color: #b91c1c; }
+
+        .loading-spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header">
+            <h1>Attendance Punch</h1>
+            <p>Enter your details and select an action</p>
+        </div>
+
+        <div id="statusBanner" class="status-banner info">Initializing GPS verification...</div>
+
+        <form id="attendanceForm" onsubmit="return false;">
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" placeholder="John Doe" required>
+            </div>
+
+            <div class="form-group">
+                <label for="badgeId">Badge ID</label>
+                <input type="text" id="badgeId" placeholder="e.g. EMP1234" required>
+            </div>
+
+            <div class="form-group">
+                <label for="team">Team Selection</label>
+                <div class="select-wrapper">
+                    <select id="team" required>
+                        <option value="" disabled selected>Select your manager...</option>
+                        <option value="Camilla">Camilla</option>
+                        <option value="Ramon">Ramon</option>
+                        <option value="Brandon">Brandon</option>
+                        <option value="Damien">Damien</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button type="button" id="btnClockIn" class="btn-in" disabled>Clock In</button>
+                <button type="button" id="btnClockOut" class="btn-out" disabled>Clock Out</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // REPLACE THIS URL WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+        const WEB_APP_URL = "https://script.google.com/macros/s/XXXXX/exec";
+
+        let userCoordinates = null;
+
+        const statusBanner = document.getElementById('statusBanner');
+        const btnClockIn = document.getElementById('btnClockIn');
+        const btnClockOut = document.getElementById('btnClockOut');
+        const form = document.getElementById('attendanceForm');
+
+        // Request Location Immediately on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            requestLocation();
+        });
+
+        function requestLocation() {
+            if (!navigator.geolocation) {
+                showStatus("Access Denied. Your device/browser does not support location services.", "error");
+                return;
+            }
+
+            const geoOptions = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
+        }
+
+        function geoSuccess(position) {
+            const lat = position.coords.latitude.toFixed(5);
+            const long = position.coords.longitude.toFixed(5);
+            userCoordinates = `${lat}, ${long}`;
+            
+            // Unlock Buttons
+            btnClockIn.disabled = false;
+            btnClockOut.disabled = false;
+            
+            showStatus("GPS Lock Acquired successfully.", "success");
+            // Fade out the success banner smoothly after 3 seconds
+            setTimeout(() => {
+                if(statusBanner.classList.contains('success')) {
+                    statusBanner.style.display = 'none';
+                }
+            }, 3000);
+        }
+
+        function geoError(error) {
+            userCoordinates = null;
+            btnClockIn.disabled = true;
+            btnClockOut.disabled = true;
+            showStatus("Access Denied. You must enable location services to clock in or out.", "error");
+        }
+
+        function showStatus(message, type) {
+            statusBanner.className = `status-banner ${type}`;
+            statusBanner.innerText = message;
+        }
+
+        // Handle Form Action Submission
+        async function handleSubmit(action) {
+            // Validate standard HTML5 inputs
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            if (!userCoordinates) {
+                showStatus("Access Denied. Missing valid GPS coordinates.", "error");
+                return;
+            }
+
+            const payload = {
+                employeeName: document.getElementById('fullName').value.trim(),
+                badgeId: document.getElementById('badgeId').value.trim(),
+                team: document.getElementById('team').value,
+                action: action,
+                location: userCoordinates
+            };
+
+            // UI Loading State
+            const originalInText = btnClockIn.innerHTML;
+            const originalOutText = btnClockOut.innerHTML;
+            setLoadingState(true);
+
+            try {
+                // 'no-cors' mode safely handles Google Apps Script 302 redirects
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                // Because 'no-cors' returns an opaque response, we safely assume delivery if no network error drops.
+                showStatus(`Successfully Logged: ${action}!`, "success");
+                form.reset();
+                
+                // Re-request location setup to keep token fresh for next punch
+                requestLocation();
+
+            } catch (error) {
+                console.error("Submission Error: ", error);
+                showStatus("Network Error. Failed to submit punch. Try again.", "error");
+            } finally {
+                setLoadingState(false, originalInText, originalOutText);
+            }
+        }
+
+        function setLoadingState(isLoading, inText, outText) {
+            if (isLoading) {
+                btnClockIn.disabled = true;
+                btnClockOut.disabled = true;
+                btnClockIn.innerHTML = '<div class="loading-spinner"></div>';
+                btnClockOut.innerHTML = '<div class="loading-spinner"></div>';
+            } else {
+                btnClockIn.disabled = false;
+                btnClockOut.disabled = false;
+                btnClockIn.innerHTML = inText;
+                btnClockOut.innerHTML = outText;
+            }
+        }
+
+        btnClockIn.addEventListener('click', () => handleSubmit('Clock In'));
+        btnClockOut.addEventListener('click', () => handleSubmit('Clock Out'));
+    </script>
+</body>
+</html>
