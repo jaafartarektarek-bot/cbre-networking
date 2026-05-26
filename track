@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CBRE Attendance</title>
+
+  <style>
+    body{
+      font-family: Arial;
+      background:#111;
+      color:white;
+      text-align:center;
+      padding:40px;
+    }
+
+    button{
+      width:200px;
+      padding:20px;
+      margin:10px;
+      font-size:20px;
+      border:none;
+      border-radius:10px;
+    }
+
+    .in{
+      background:green;
+      color:white;
+    }
+
+    .out{
+      background:red;
+      color:white;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>CBRE Network Attendance</h1>
+
+<input id="employee" placeholder="Employee Name">
+<br><br>
+<input id="employee ID" placeholder="Employee ID">
+<br><br>
+
+<select id="team">
+  <option>Camilla Team</option>
+  <option>Ramon Team</option>
+  <option>Brandon Team</option>
+  <option>Damien Team</option>
+</select>
+
+<br><br>
+
+<button class="in" onclick="clock('Check In')">
+Check In
+</button>
+
+<button class="out" onclick="clock('Check Out')">
+Check Out
+</button>
+
+<script>
+
+const scriptURL =
+"https://script.google.com/macros/s/AKfycbwGgDUrMugmzE_iz5aH6W4p6y0M20ryKOclo-6amtLEYUS_bpevB6mgas2JHIWiKMZA/exec";
+
+function clock(action){
+
+navigator.geolocation.getCurrentPosition((pos)=>{
+
+fetch(scriptURL,{
+method:"POST",
+body:JSON.stringify({
+employee:
+document.getElementById("employee").value,
+
+team:
+document.getElementById("team").value,
+
+action:action,
+
+latitude:pos.coords.latitude,
+
+longitude:pos.coords.longitude,
+
+site:"QN03"
+})
+})
+.then(r=>r.json())
+.then(data=>{
+alert(action + " successful");
+});
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
